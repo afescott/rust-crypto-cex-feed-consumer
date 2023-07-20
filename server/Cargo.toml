@@ -1,0 +1,23 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+app = { path = "../app" }
+async-trait = "0.1.68"
+async-bybit = "0.0.1"
+ring = "0.16.20"
+hex = "0.4"
+reqwest = "0.11.18"
+serde = "1.0.163"
+dotenv ={ workspace = true}
+tokio = { workspace = true}
+axum = { workspace = true}
+axum-server = "0.5.1"
+kucoin_rs = "0.4.4"
+rust-bybit = { git = "https://github.com/yufuquant/rust-bybit.git" }
+
+[features]

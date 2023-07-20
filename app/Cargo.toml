@@ -1,0 +1,21 @@
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+dotenv ={ workspace = true}
+tokio = { workspace = true}
+serde_json = "1.0.102"
+async-trait = "0.1"
+thiserror = "1.0.40"
+ring = "0.16.20"
+hex = "0.4"
+dotenv_codegen = "0.15.0"
+serde = {version = "1.0.163", features = ["derive"]}
+axum = { workspace = true}
+axum-server = "0.5.1"
+kucoin_rs = "0.4.4" 
