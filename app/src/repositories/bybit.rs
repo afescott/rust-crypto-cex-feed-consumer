@@ -33,8 +33,6 @@ impl Provider for ByBitImplementation {
         let bybit_key = dotenv::var("BYBIT_KEY").unwrap();
         let bybit_secret = dotenv::var("BYBIT_SECRET").unwrap();
         let response = request_type.format_params();
-        println!("{:?}", response.0);
-        println!("{:?}", response.1);
 
         let d = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -82,7 +80,7 @@ impl Provider for ByBitImplementation {
         .await
         .map_err(|e| Error::DeserializeError(e.to_string()))?;
 
-        // println!("{:?}", response);
+        println!("{:?}", response);
         let mut vec: Vec<T> = Vec::new();
 
         if let Some(value) = response["result"]["list"].as_array() {

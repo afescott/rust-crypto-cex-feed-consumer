@@ -50,7 +50,8 @@ impl Provider for KucoinImplementation {
         closure();
         match request_type {
             RequestType::UserHoldings(s) => {
-                let result = self.sign.get_accounts_list(None, None).await.err();
+                let result = self.sign.get_accounts_list(None, None).await;
+                println!("{:?}", s);
                 todo!()
             }
             RequestType::UserInfo => {

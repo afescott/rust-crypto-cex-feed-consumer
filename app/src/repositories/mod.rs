@@ -49,11 +49,11 @@ pub enum RequestType {
 //     }
 // }
 impl RequestType {
-    fn from(value: String, params: Vec<String>) -> Self {
+    pub fn from(value: String, params: Vec<String>) -> Option<Self> {
         match value.as_str() {
-            "userHoldings" => Self::UserHoldings(vec![]),
-            "asfafasf" => Self::UserOrderStats(vec![]),
-            _ => Self::UserInfo,
+            "userHoldings" => Some(Self::UserHoldings(params)),
+            "userOrderStats" => Some(Self::UserOrderStats(params)),
+            _ => None, // Self::UserInfo,
         }
     }
     fn format_params(self) -> (String, String) {
