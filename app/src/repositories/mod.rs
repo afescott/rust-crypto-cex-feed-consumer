@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use serde::de::DeserializeOwned;
 use tokio::join;
 
@@ -17,86 +19,79 @@ pub trait Provider: Send + Sync + 'static {
         &self,
         request: RequestType,
     ) -> Result<Vec<T>, crate::error::Error>;
-
-    async fn convert(&self);
 }
 
 #[async_trait::async_trait]
 pub trait Repository<T>: Send + Sync + Clone + 'static {
-    //this will call the provider. What are we thinking?
-    type Provider: Provider; //why does this exist? Can you call provider from struct without initialising
+    type Provider: Provider;
 
     fn provider(&self) -> &Self::Provider;
 
-    fn store_data(&self, order: Vec<T>); //internal event state just needs selection, event
+    fn store_data(&self, results: Vec<T>); //internal event state just needs selection, event
 }
 
 #[derive(Debug, Clone)]
 pub enum RequestType {
     //     UserHoldings(Option<&'a str>), //currency type
-    UserHoldings(Vec<String>), //currency type
+    UserHoldings(String), //currency type
     UserInfo,
     UserCurrencyTradeHistory(String),
-    UserOrderStats(Vec<String>),
+    UserOrderStats(String),
 }
-// impl From<String> for RequestType {
-//     fn from(value: String, params: Vec<String>) -> Self {
-//         match value.as_str() {
-//             "userHoldings" => Self::UserHoldings(vec![]),
-//             "asfafasf" => Self::UserOrderStats(vec![]),
-//             _ => Self::UserInfo,
-//         }
-//     }
-// }
+
+/* Kucoin is not required */
+pub enum CexType {
+    Bybit,
+}
+
 impl RequestType {
-    pub fn from(value: String, params: Vec<String>) -> Option<Self> {
+    pub fn from(value: String, params: String) -> core::result::Result<Self, String> {
         match value.as_str() {
-            "userHoldings" => Some(Self::UserHoldings(params)),
-            "userOrderStats" => Some(Self::UserOrderStats(params)),
-            _ => None, // Self::UserInfo,
+            "userHoldings" => Ok(Self::UserHoldings(params)),
+            "userOrderStats" => Ok(Self::UserOrderStats(params)),
+            _ => Err(String::from("Please select a valid endpoint")), // Self::UserInfo,
         }
     }
-    fn format_params(self) -> (String, String) {
+    pub fn get_parameters(self) -> String {
+        match self {
+            RequestType::UserHoldings(p) => p,
+            RequestType::UserInfo => todo!(),
+            RequestType::UserCurrencyTradeHistory(p) => p,
+            RequestType::UserOrderStats(p) => p,
+        }
+    }
+    fn format_url(&self, cex: CexType) -> String {
         let mut str = String::new();
         match self {
             RequestType::UserHoldings(s) => {
-                let mut string = String::new();
-                //"category=linear&symbol=RNDRUSDT".to_string(),
-
-                for ele in s {
-                    println!("{:?}", ele);
-                    string = format!("{ele}");
+                match cex {
+                    CexType::Bybit => str.push_str(&format!("/v5/account/wallet-balance?{}", s)),
                 }
-
-                str.push_str(&format!("/v5/account/wallet-balance?{}", string));
-                //account type- UNIFIED/CONTRACT/SPOT
-                //or use /v5/asset/transfer/query-account-coins-balance"
-                (str, string)
+                str.to_string()
             }
             RequestType::UserInfo => {
                 //https://bybit-exchange.github.io/docs/api-explorer/v5/position/position-info
                 // _parameters = ["category", "inverse"];
-
-                str.push_str("/v5/user/query-api"); //symbol
-                (str, String::from(""))
+                match cex {
+                    CexType::Bybit => str.push_str("/v5/user/query-api"),
+                }
+                str.to_string()
             }
             RequestType::UserCurrencyTradeHistory(s) => {
                 //category e.g. spot
-                str.push_str(&format!("/v5/asset/delivery-record?{}", s));
-                (str, s)
+                match cex {
+                    CexType::Bybit => str.push_str(&format!("/v5/asset/delivery-record?{}", s)),
+                }
+                str.to_string()
             }
             RequestType::UserOrderStats(s) => {
-                let mut string = String::new();
-                //"category=linear&symbol=RNDRUSDT".to_string(),
-
-                for ele in s {
-                    println!("{:?}", ele);
-                    string = format!("{ele}");
+                match cex {
+                    CexType::Bybit => str.push_str(&format!("/v5/order/history?{}", s)),
                 }
-                println!("{:?}", string);
-                str.push_str(&format!("/v5/order/history?{}", string)); //not sure if this is gna
-                                                                        //work
-                (str, string)
+
+                println!("{:?}", str);
+
+                str.to_string()
                 //starttime-endtime modified
             }
         }

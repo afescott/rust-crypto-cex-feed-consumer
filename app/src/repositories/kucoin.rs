@@ -45,9 +45,7 @@ impl Provider for KucoinImplementation {
         &self,
         request_type: RequestType,
     ) -> Result<Vec<T>, crate::error::Error> {
-        let closure = move || println!("captured sfaf by value");
-
-        closure();
+        // request_type.format_url(super::CexType::Kucoin);
         match request_type {
             RequestType::UserHoldings(s) => {
                 let result = self.sign.get_accounts_list(None, None).await;
@@ -80,6 +78,4 @@ impl Provider for KucoinImplementation {
         // )
         // .map_err(|e| Error::DeserializeError(e.to_string()))
     }
-
-    async fn convert(&self) {}
 }

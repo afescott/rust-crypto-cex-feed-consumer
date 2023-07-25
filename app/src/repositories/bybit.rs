@@ -32,7 +32,11 @@ impl Provider for ByBitImplementation {
     ) -> Result<Vec<T>, crate::error::Error> {
         let bybit_key = dotenv::var("BYBIT_KEY").unwrap();
         let bybit_secret = dotenv::var("BYBIT_SECRET").unwrap();
-        let response = request_type.format_params();
+        let response = request_type.format_url(crate::repositories::CexType::Bybit);
+        println!("{:?}", response);
+        let mut params = request_type.get_parameters();
+        //    let params = request_type.....
+        println!("{:?}", params);
 
         let d = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -44,7 +48,7 @@ impl Provider for ByBitImplementation {
             "{time}{api_key}5000{params}",
             api_key = bybit_key,
             time = d,
-            params = response.1 //implement from for enum here?
+            params = params //implement from for enum here?
         );
 
         let tag = sign(&key, &val.as_bytes());
@@ -68,7 +72,7 @@ impl Provider for ByBitImplementation {
 
         let request = self
             .client
-            .get(format!("https://api.bybit.com{}", response.0))
+            .get(format!("https://api.bybit.com{}", response))
             .headers(headers);
 
         let response = response_to_json(
@@ -95,21 +99,7 @@ impl Provider for ByBitImplementation {
         }
 
         Ok(vec)
-
-        // serde_json::from_value::<T>(
-        //     response_to_json(
-        //         request
-        //             .send()
-        //             .await
-        //             .map_err(|e| Error::ReqwestError(e.to_string())),
-        //     )
-        //     .await
-        //     .map_err(|e| crate::error::Error::ReqwestError(e.to_string()))?,
-        // )
-        // .map_err(|e| Error::DeserializeError(e.to_string()))
     }
-
-    async fn convert(&self) {}
 }
 pub async fn response_to_json(
     response: Result<Response, crate::error::Error>,

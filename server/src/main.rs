@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -8,7 +9,7 @@ use app::models::wallet::Wallet;
 use app::error::Error;
 use app::repositories::bybit::ByBitImplementation;
 use app::repositories::kucoin::KucoinImplementation;
-use app::repositories::mem::{InnerRepository, StorageRepository};
+use app::repositories::mem::StorageRepository;
 use app::repositories::{Provider, Repository, RequestType};
 use axum::extract::Path;
 use axum::Extension;
@@ -17,7 +18,7 @@ use axum_server::bind;
 use axum_server::Handle;
 use config::Config;
 use kucoin_rs::reqwest::Client;
-use kucoin_rs::serde_json::{self, json, Value};
+
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use tokio::main;
@@ -56,12 +57,14 @@ async fn run_local_server() {
     let kucoin_implementation = Arc::new(KucoinImplementation::new());
 
     //map out and rengineer this repository. doesn't make sense as is
-    let order_repo_bybit = StorageRepository::<_, Order>::new(Arc::clone(&bybit_implementation));
-
-    let wallet_repo_bybit = StorageRepository::<_, Wallet>::new(Arc::clone(&bybit_implementation));
+    let order_repo_bybit =
+        StorageRepository::<ByBitImplementation, Order>::new(Arc::clone(&bybit_implementation));
+    let wallet_repo_bybit =
+        StorageRepository::<ByBitImplementation, Wallet>::new(Arc::clone(&bybit_implementation));
     let wallet_repo_kucoin =
-        StorageRepository::<_, Wallet>::new(Arc::clone(&kucoin_implementation));
-    let order_repo_kucoin = StorageRepository::<_, Order>::new(Arc::clone(&kucoin_implementation));
+        StorageRepository::<KucoinImplementation, Wallet>::new(Arc::clone(&kucoin_implementation));
+    let order_repo_kucoin =
+        StorageRepository::<KucoinImplementation, Order>::new(Arc::clone(&kucoin_implementation));
 
     let _result = bind(addr)
         .handle(handle)
@@ -83,30 +86,22 @@ fn route_api() -> Router {
         // .route("/kucoin", get(|| async { "Kucoin  root" }))
         .route(
             "/bybitorder/:order/*params",
-            get(get_bybit_command::<StorageRepository<ByBitImplementation, _>, Order>),
+            get(get_bybit_command::<StorageRepository<ByBitImplementation, Order>, Order>),
         )
         .route(
             "/bybitwallet/:wallet/*params",
-            get(get_bybit_command::<StorageRepository<ByBitImplementation, _>, Wallet>),
+            get(get_bybit_command::<StorageRepository<ByBitImplementation, Wallet>, Wallet>),
         )
         .route(
             "/kucoinwallet/:wallet/*params",
-            get(get_kucoin_command::<StorageRepository<ByBitImplementation, _>, Wallet>),
+            get(get_kucoin_command::<StorageRepository<KucoinImplementation, Wallet>, Wallet>),
         )
         .route(
             "/kucoinorder/:order/*params",
-            get(get_kucoin_command::<StorageRepository<ByBitImplementation, _>, Order>),
+            get(get_kucoin_command::<StorageRepository<KucoinImplementation, Order>, Order>),
         )
 }
 
-// fn bybit() -> Router {
-//     Router::new()
-//         .route(
-//             "/bybit",
-//             get(get_coins_history::<StorageRepository<ByBitImplementation, Order>>),
-//         )
-//         .route("/wallet_balance", get(wallet_balance))
-// }
 async fn get_kucoin_command<T, G>(
     Path((wallet, params)): Path<(String, String)>,
     Extension(repository): Extension<T>,
@@ -114,15 +109,12 @@ async fn get_kucoin_command<T, G>(
     G: DeserializeOwned + Debug,
     T: Repository<G>,
 {
-    let params = params.split("&").map(String::from).collect();
-    println!("{:?}, {:?}", wallet, params);
-    let result = RequestType::from(wallet, params);
+    // let params = params.split("&").map(String::from).collect();
+    // println!("{:?}, {:?}", wallet, params);
+    let result = RequestType::from(wallet, params).unwrap();
     let result = repository
         .provider()
-        .get_user_info::<G>(result.unwrap())
-        // (RequestType::UserHoldings   (
-        //     params.iter().map(|&s| s.into()).collect(),
-        // ))
+        .get_user_info::<G>(result)
         .await
         .unwrap();
 
@@ -136,30 +128,15 @@ async fn get_bybit_command<T, G>(
     G: DeserializeOwned + Debug,
     T: Repository<G>,
 {
-    let params = params.split("&").map(String::from).collect();
-    println!("{:?}, {:?}", get_command, params);
     let result = RequestType::from(get_command, params);
-    println!("{:?}", result);
 
     let result = repository
         .provider()
         .get_user_info::<G>(result.unwrap())
-        // (RequestType::UserHoldings   (
-        //     params.iter().map(|&s| s.into()).collect(),
-        // ))
         .await
         .unwrap();
-    // let result = repository
-    //     .provider()
-    //     .get_user_info::<G>(RequestType::UserOrderStats(
-    //         params.iter().map(|&s| s.into()).collect(),
-    //     ))
-    //     .await
-    //     .unwrap();
 
-    // for ele in result {
-    //     repository.store_data(ele);
-    // }
+    repository.store_data(result);
 
     todo!()
 }
