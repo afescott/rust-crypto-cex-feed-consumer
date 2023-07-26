@@ -1,15 +1,10 @@
-use std::{fmt::Debug, time::SystemTime};
+use std::{collections::HashMap, fmt::Debug};
 
-use axum::http::{header::CONTENT_TYPE, HeaderMap, HeaderValue};
-use hex::encode;
-use kucoin_rs::{
-    kucoin::client::{Credentials, Kucoin, KucoinEnv},
-    reqwest::{self},
+use kucoin_rs::kucoin::{
+    client::{Credentials, Kucoin, KucoinEnv},
+    trade::OrderInfoOptionals,
 };
-use ring::hmac::{sign, Key, HMAC_SHA256};
 use serde::de::DeserializeOwned;
-
-use crate::error::Error;
 
 use super::{Provider, RequestType};
 
@@ -46,10 +41,20 @@ impl Provider for KucoinImplementation {
         request_type: RequestType,
     ) -> Result<Vec<T>, crate::error::Error> {
         // request_type.format_url(super::CexType::Kucoin);
+
         match request_type {
             RequestType::UserHoldings(s) => {
-                let result = self.sign.get_accounts_list(None, None).await;
-                println!("{:?}", s);
+                let params = s
+                    .split("&")
+                    .collect::<Vec<_>>()
+                    .chunks_exact(2)
+                    .map(|chunk| (chunk[0].clone(), chunk[1].clone())) // map slices to tuples
+                    .collect::<HashMap<&str, &str>>();
+
+                let result = self
+                    .sign
+                    .get_accounts_list(params.get("currency").copied(), params.get("type").copied())
+                    .await;
                 todo!()
             }
             RequestType::UserInfo => {
@@ -57,11 +62,39 @@ impl Provider for KucoinImplementation {
                 todo!()
             }
             RequestType::UserCurrencyTradeHistory(s) => {
-                self.sign.get_trade_histories("USDT");
+                let params = s
+                    .split("&")
+                    .collect::<Vec<_>>()
+                    .chunks_exact(2)
+                    .map(|chunk| (chunk[0].clone(), chunk[1].clone())) // map slices to tuples
+                    .collect::<HashMap<&str, &str>>();
+
+                let _ = self
+                    .sign
+                    .get_trade_histories(
+                        params
+                            .get("symbol")
+                            .ok_or(crate::error::Error::ReqwestError(
+                                "Missing currency parameter".to_string(),
+                            ))
+                            .unwrap(),
+                    )
+                    .await;
                 todo!()
             }
             RequestType::UserOrderStats(s) => {
-                self.sign.get_daily_stats("USDT");
+                // self.sign.get_orders(Some(OrderInfoOptionals {
+                //     status: Some("afsafs"),
+                //     current_page: Some(22),
+                //     end_at: Some(25),
+                //     page_size: Some(25),
+                //     start_at: Some(12),
+                //     side: Some("asfaf"),
+                //     symbol: Some("asfasf"),
+                //     trade_type: Some("asfaf"),
+                //     r#type: Some("asfas"), // type : Some("asfaf")
+                // }));
+                self.sign.get_daily_stats("USDT").await;
                 todo!()
             }
         };

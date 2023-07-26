@@ -34,7 +34,7 @@ impl Provider for ByBitImplementation {
         let bybit_secret = dotenv::var("BYBIT_SECRET").unwrap();
         let response = request_type.format_url(crate::repositories::CexType::Bybit);
         println!("{:?}", response);
-        let mut params = request_type.get_parameters();
+        let params = request_type.get_parameters();
         //    let params = request_type.....
         println!("{:?}", params);
 

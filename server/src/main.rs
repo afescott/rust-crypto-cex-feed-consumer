@@ -45,7 +45,7 @@ async fn run_local_server() {
     let handle = Handle::new();
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3001));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
     //initialise repository here as an arc state
     //every time we receive a request. after request we need to store in state
@@ -109,9 +109,12 @@ async fn get_kucoin_command<T, G>(
     G: DeserializeOwned + Debug,
     T: Repository<G>,
 {
-    // let params = params.split("&").map(String::from).collect();
-    // println!("{:?}, {:?}", wallet, params);
+    println!("{:?}", params);
+
     let result = RequestType::from(wallet, params).unwrap();
+
+    println!("{:?}", result);
+
     let result = repository
         .provider()
         .get_user_info::<G>(result)

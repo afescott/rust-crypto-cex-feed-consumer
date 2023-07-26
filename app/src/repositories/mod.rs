@@ -1,9 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
 use serde::de::DeserializeOwned;
-use tokio::join;
-
-use crate::models::order::Order;
 
 pub mod bybit;
 pub mod kucoin;
@@ -11,8 +6,6 @@ pub mod mem;
 
 #[async_trait::async_trait]
 pub trait Provider: Send + Sync + 'static {
-    //could this provider retrieve selection & event data? Should 2 api's exist? One for selection and event
-    /// Returns `EventId` list
     fn new() -> Self;
 
     async fn get_user_info<T: DeserializeOwned + core::fmt::Debug>(
@@ -39,7 +32,6 @@ pub enum RequestType {
     UserOrderStats(String),
 }
 
-/* Kucoin is not required */
 pub enum CexType {
     Bybit,
 }
@@ -52,6 +44,13 @@ impl RequestType {
             _ => Err(String::from("Please select a valid endpoint")), // Self::UserInfo,
         }
     }
+    // pub fn from_new(value: String, params: Vec<String>) -> core::result::Result<Self, String> {
+    //     match value.as_str() {
+    //         "userHoldings" => Ok(Self::UserHoldings("asfsf".to_string())),
+    //         "userOrderStats" => Ok(Self::UserOrderStats("asfaf".to_string())),
+    //         _ => Err(String::from("Please select a valid endpoint")), // Self::UserInfo,
+    //     }
+    // }
     pub fn get_parameters(self) -> String {
         match self {
             RequestType::UserHoldings(p) => p,
