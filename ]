@@ -38,11 +38,15 @@ impl Provider for KucoinImplementation {
         }
     }
 
-    async fn get_user_info<T>(
+    async fn get_user_info<T
++ std::convert::From<kucoin_rs::kucoin::model::market::DailyStats>> (
         &self,
         request_type: RequestType,
-    ) -> Result<Vec<T>, crate::error::Error> {
-        let mut daily_stats: Vec<T> = Vec::new();
+    ) -> Result<Vec<T>, crate::error::Error>
+// where
+    //     T: From<DailyStats>,
+    {
+        // request_type.format_url(super::CexType::Kucoin);
 
         match request_type {
             RequestType::UserHoldings(s) => {
@@ -88,9 +92,9 @@ impl Provider for KucoinImplementation {
                     .await
                     // .map_err(|err| crate::error::Error::ReqwestError("asfafaf".to_string()))
                     .map_err(|err| crate::error::Error::ReqwestError(err.to_string()));
-                result.map(|x| daily_stats.push(x.into()));
+                let mut daily_stats: Vec<T> = Vec::new();
 
-                //TODO: Put values from each match statement into format then convert into T
+                result.map(|x| daily_stats.push(x.data.unwrap().into()));
                 todo!()
             }
         }

@@ -83,7 +83,6 @@ async fn run_local_server() {
 
 fn route_api() -> Router {
     Router::new()
-        // .route("/kucoin", get(|| async { "Kucoin  root" }))
         .route(
             "/bybitorder/:order/*params",
             get(get_bybit_command::<StorageRepository<ByBitImplementation, Order>, Order>),
@@ -109,11 +108,7 @@ async fn get_kucoin_command<T, G>(
     G: DeserializeOwned + Debug,
     T: Repository<G>,
 {
-    println!("{:?}", params);
-
     let result = RequestType::from(wallet, params).unwrap();
-
-    println!("{:?}", result);
 
     let result = repository
         .provider()
@@ -132,7 +127,6 @@ async fn get_bybit_command<T, G>(
     T: Repository<G>,
 {
     let result = RequestType::from(get_command, params);
-
     let result = repository
         .provider()
         .get_user_info::<G>(result.unwrap())
