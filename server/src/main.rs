@@ -31,9 +31,10 @@ extern crate dotenv;
 use dotenv::dotenv;
 use std::env;
 
+//Entry point for the application
 #[tokio::main]
 async fn main() {
-    let result = dotenv().ok();
+    dotenv().ok();
     for (key, value) in env::vars() {
         println!("{}: {}", key, value);
     }
@@ -45,7 +46,7 @@ async fn run_local_server() {
     let handle = Handle::new();
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3002));
 
     //initialise repository here as an arc state
     //every time we receive a request. after request we need to store in state
@@ -54,7 +55,9 @@ async fn run_local_server() {
         client: Client::new(),
     });
 
-    let kucoin_implementation = Arc::new(KucoinImplementation::new());
+    let kucoin_implementation = Arc::new(KucoinImplementation {
+        client: Client::new(),
+    });
 
     //map out and rengineer this repository. doesn't make sense as is
     let order_repo_bybit =

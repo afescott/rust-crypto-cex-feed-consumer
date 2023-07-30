@@ -17,10 +17,14 @@ impl Key {
     }
 }
 
-use super::{Provider, Repository};
+use super::Provider;
 #[derive(Debug, Clone)]
 pub struct StorageRepository<T, U> {
+    // Provider to to retrieve from Bybit/Kucoin/etc api
     pub provider: Arc<T>,
+    // In memory state for each respective model type
+    //
+    // Key mapping to unique model types of a collection
     pub state: Arc<Mutex<HashMap<Key, HashSet<U>>>>,
 }
 

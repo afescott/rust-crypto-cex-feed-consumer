@@ -35,8 +35,6 @@ impl Provider for ByBitImplementation {
         let response = request_type.format_url(crate::repositories::CexType::Bybit);
         println!("{:?}", response);
         let params = request_type.get_parameters();
-        //    let params = request_type.....
-        println!("{:?}", params);
 
         let d = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)

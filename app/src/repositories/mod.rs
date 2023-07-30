@@ -27,13 +27,13 @@ pub trait Repository<T>: Send + Sync + Clone + 'static {
 pub enum RequestType {
     //     UserHoldings(Option<&'a str>), //currency type
     UserHoldings(String), //currency type
-    UserInfo,
     UserCurrencyTradeHistory(String),
     UserOrderStats(String),
 }
 
 pub enum CexType {
     Bybit,
+    Kucoin,
 }
 
 impl RequestType {
@@ -44,17 +44,9 @@ impl RequestType {
             _ => Err(String::from("Please select a valid endpoint")), // Self::UserInfo,
         }
     }
-    // pub fn from_new(value: String, params: Vec<String>) -> core::result::Result<Self, String> {
-    //     match value.as_str() {
-    //         "userHoldings" => Ok(Self::UserHoldings("asfsf".to_string())),
-    //         "userOrderStats" => Ok(Self::UserOrderStats("asfaf".to_string())),
-    //         _ => Err(String::from("Please select a valid endpoint")), // Self::UserInfo,
-    //     }
-    // }
     pub fn get_parameters(self) -> String {
         match self {
             RequestType::UserHoldings(p) => p,
-            RequestType::UserInfo => todo!(),
             RequestType::UserCurrencyTradeHistory(p) => p,
             RequestType::UserOrderStats(p) => p,
         }
@@ -65,14 +57,7 @@ impl RequestType {
             RequestType::UserHoldings(s) => {
                 match cex {
                     CexType::Bybit => str.push_str(&format!("/v5/account/wallet-balance?{}", s)),
-                }
-                str.to_string()
-            }
-            RequestType::UserInfo => {
-                //https://bybit-exchange.github.io/docs/api-explorer/v5/position/position-info
-                // _parameters = ["category", "inverse"];
-                match cex {
-                    CexType::Bybit => str.push_str("/v5/user/query-api"),
+                    CexType::Kucoin => str.push_str(&format!("/api/v1/accounts?{}", s)),
                 }
                 str.to_string()
             }
@@ -80,12 +65,14 @@ impl RequestType {
                 //category e.g. spot
                 match cex {
                     CexType::Bybit => str.push_str(&format!("/v5/asset/delivery-record?{}", s)),
+                    CexType::Kucoin => str.push_str(&format!("/api/v1/market/histories?{}", s)),
                 }
                 str.to_string()
             }
             RequestType::UserOrderStats(s) => {
                 match cex {
                     CexType::Bybit => str.push_str(&format!("/v5/order/history?{}", s)),
+                    CexType::Kucoin => str.push_str(&format!("/api/v1/market/stats?{}", s)),
                 }
 
                 println!("{:?}", str);
@@ -95,25 +82,4 @@ impl RequestType {
             }
         }
     }
-}
-
-#[tokio::test]
-async fn test_thread() {
-    let mut value = std::sync::Arc::new(std::sync::Mutex::new("arc original"));
-
-    let mut value2 = std::sync::Arc::clone(&value);
-    let mut value3 = std::sync::Arc::clone(&value);
-    let thread = std::thread::spawn(move || {
-        *value2.lock().unwrap() = "thread 2".into();
-    });
-
-    let thread123 = std::thread::spawn(move || {
-        *value.lock().unwrap() = "thread 3".into();
-    });
-
-    // println!("{:?}", value.clone().lock().unwrap());
-    // println!("{:?}", value2);
-    // println!("{:?}", value3);
-
-    // join!(thread, thread123);
 }
