@@ -1,3 +1,4 @@
+use super::StorageRepository;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
@@ -17,25 +18,46 @@ impl Key {
     }
 }
 
-use super::Provider;
 #[derive(Debug, Clone)]
-pub struct StorageRepository<T, U> {
-    // Provider to to retrieve from Bybit/Kucoin/etc api
-    pub provider: Arc<T>,
+pub struct StorageRepo<T>
+where
+    (String, String): From<T>,
+{
     // In memory state for each respective model type
     //
     // Key mapping to unique model types of a collection
-    pub state: Arc<Mutex<HashMap<Key, HashSet<U>>>>,
+    pub state: Arc<Mutex<HashMap<Key, Vec<T>>>>,
 }
 
-impl<T, U> StorageRepository<T, U>
+impl<T> StorageRepo<T>
 where
-    T: Provider,
+    (String, String): From<T>,
 {
-    pub fn new(provider: Arc<T>) -> Self {
+    pub fn new() -> Self {
         Self {
-            provider,
             state: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+}
+
+impl<T> StorageRepository<T> for crate::repositories::mem::StorageRepo<T>
+where
+    (String, String): From<T>,
+    T: Clone,
+{
+    fn store_data(&self, results: Vec<T>) {
+        let mut result = self.state.lock().unwrap();
+
+        for ele in results {
+            let keys: (String, String) = ele.clone().into();
+
+            let key = Key::create(keys.0.to_string(), keys.1.to_string());
+            println!("{:?}", key);
+            if !result.contains_key(&key) {
+                let potential_key = result.get_mut(&key);
+
+                potential_key.unwrap().push(ele);
+            }
         }
     }
 }

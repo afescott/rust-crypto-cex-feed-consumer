@@ -1,9 +1,11 @@
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
+use base64::alphabet::STANDARD;
 use hex::encode;
 use hmac::{Hmac, Mac};
 use ring::hmac::{sign, Key, HMAC_SHA256};
+use serde_json::{json, map::Values, Value};
 use sha2::Sha256;
-use std::{collections::HashMap, fmt::Debug, thread, time::Duration};
+use std::{collections::HashMap, fmt::Debug, str::FromStr, thread, time::Duration};
 
 use kucoin_rs::{
     kucoin::{
@@ -20,7 +22,7 @@ use kucoin_rs::{
 
 use serde::de::DeserializeOwned;
 
-use crate::error::Error;
+use crate::{error::Error, repositories::response_to_json};
 
 use super::{Provider, RequestType};
 
@@ -49,47 +51,41 @@ impl Provider for KucoinImplementation {
         Self { client }
     }
 
-    async fn get_user_info<T: DeserializeOwned + core::fmt::Debug>(
+    async fn get_user_info<T: DeserializeOwned + Debug, U: From<T>>(
         &self,
         request: RequestType,
-    ) -> Result<Vec<T>, crate::error::Error> {
-        let url = "https://api.kucoin.com/api/v2/sub/user";
-        let req_url = reqwest::Url::parse(&url).unwrap();
+    ) -> Result<Vec<U>, crate::error::Error> {
         let endpoint = request.format_url(crate::repositories::CexType::Kucoin);
+        println!("{:?}", endpoint);
         let nonce = get_time().to_string();
+        let d = std::time::SystemTime::now()
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
 
         let api_key = dotenv::var("KUCOIN_KEY").unwrap();
 
         let secret_key = dotenv::var("KUCOIN_SECRET").unwrap();
         let passphrase = dotenv::var("KUCOIN_PASSPHRASE").unwrap();
+        let str_to_sign = format!("{}{}{}", nonce, "GET", endpoint);
 
-        let str_to_sign = format!("{}{}{}", nonce, "GET", "/api/v2/sub/user");
-        //
-        // println!("{:?}", str_to_sign);
-        // let key_sign = Key::new(HMAC_SHA256, &secret_key.as_bytes());
-        //
-        // let tag_secret = sign(&key_sign, str_to_sign.as_bytes());
-        //
-        // let sign_digest = encode(tag_secret.as_ref());
-        //
-        // let key = Key::new(HMAC_SHA256, &secret_key.as_bytes());
-        //
-        // let tag_passphrase = sign(&key, passphrase.as_bytes());
-        //
-        // let passphrase_digest = encode(tag_passphrase.as_ref());
+        println!("{:?}", str_to_sign);
+        let key_sign = Key::new(HMAC_SHA256, &secret_key.as_bytes());
 
-        let mut hmac_sign = <HmacSha256 as hmac::Mac>::new_varkey(secret_key.as_bytes())
-            .expect("HMAC can take key of any size");
-        hmac_sign.input(str_to_sign.as_bytes());
-        let sign_result = hmac_sign.result();
-        let sign_bytes = sign_result.code();
-        let sign_digest = encode(&sign_bytes.as_ref());
-        let mut hmac_passphrase =
-            HmacSha256::new_varkey(secret_key.as_bytes()).expect("HMAC can take key of any size");
-        hmac_passphrase.input(passphrase.as_bytes());
-        let passphrase_result = hmac_passphrase.result();
-        let passphrase_bytes = passphrase_result.code();
-        let passphrase_digest = encode(&passphrase_bytes.as_ref());
+        let tag_secret = sign(&key_sign, str_to_sign.as_bytes());
+
+        let sign_digest = encode(tag_secret.as_ref());
+
+        println!("{:?}", sign_digest);
+
+        // let passphrase_sign = Key::new(HMAC_SHA256, &secret_key.as_bytes());
+        //
+        // let tag_secret = sign(&passphrase_sign, passphrase.as_bytes());
+        //
+        // let passphrase_digest = encode(tag_secret.as_ref());
+
+        // println!("{:?}", passphrase_digest);
+
         let mut headers = HeaderMap::new();
 
         headers.insert(
@@ -106,7 +102,7 @@ impl Provider for KucoinImplementation {
         );
         headers.insert(
             HeaderName::from_static("kc-api-passphrase"),
-            HeaderValue::from_str(&passphrase_digest).unwrap(),
+            HeaderValue::from_str(&passphrase).unwrap(),
         );
         headers.insert(
             HeaderName::from_static("kc-api-key-version"),
@@ -114,14 +110,35 @@ impl Provider for KucoinImplementation {
         );
 
         let client = reqwest::Client::new();
-        //
-        let request = client
-            .get(req_url)
-            .headers(headers)
-            .send()
-            .await
-            .map_err(|e| Error::ReqwestError(e.to_string()));
 
-        Ok(Vec::new())
+        let request = client
+            .get(format!("https://api.kucoin.com{}", endpoint))
+            .headers(headers);
+
+        let response = response_to_json(
+            request
+                .send()
+                .await
+                .map_err(|e| Error::ReqwestError(e.to_string())),
+        )
+        .await
+        .map_err(|e| Error::DeserializeError(e.to_string()))?;
+
+        let mut vec = Vec::new();
+        if let Some(value) = response["data"].as_array() {
+            println!("{:?}", value);
+            for ele in value {
+                println!("{:?}", ele);
+                let order: T = kucoin_rs::serde_json::from_value(ele.clone())
+                    .map_err(|e| Error::DeserializeError(e.to_string()))?;
+
+                println!("{:?}", order);
+
+                vec.push(order.into());
+            }
+        } else {
+        }
+
+        Ok(vec)
     }
 }

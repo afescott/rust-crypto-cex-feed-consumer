@@ -84,6 +84,7 @@ dependencies = [
  "async-trait",
  "axum",
  "axum-server",
+ "base64 0.21.2",
  "dotenv",
  "dotenv_codegen",
  "hex",

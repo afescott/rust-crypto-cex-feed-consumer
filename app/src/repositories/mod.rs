@@ -1,4 +1,7 @@
+use kucoin_rs::reqwest::Response;
 use serde::de::DeserializeOwned;
+
+use crate::error::Error;
 
 pub mod bybit;
 pub mod kucoin;
@@ -8,25 +11,20 @@ pub mod mem;
 pub trait Provider: Send + Sync + 'static {
     fn new() -> Self;
 
-    async fn get_user_info<T: DeserializeOwned + core::fmt::Debug>(
+    async fn get_user_info<T: DeserializeOwned + core::fmt::Debug, U: From<T>>(
         &self,
         request: RequestType,
-    ) -> Result<Vec<T>, crate::error::Error>;
+    ) -> Result<Vec<U>, crate::error::Error>;
 }
 
 #[async_trait::async_trait]
-pub trait Repository<T>: Send + Sync + Clone + 'static {
-    type Provider: Provider;
-
-    fn provider(&self) -> &Self::Provider;
-
+pub trait StorageRepository<T> {
     fn store_data(&self, results: Vec<T>); //internal event state just needs selection, event
 }
 
 #[derive(Debug, Clone)]
 pub enum RequestType {
-    //     UserHoldings(Option<&'a str>), //currency type
-    UserHoldings(String), //currency type
+    UserHoldings(String),
     UserCurrencyTradeHistory(String),
     UserOrderStats(String),
 }
@@ -34,6 +32,16 @@ pub enum RequestType {
 pub enum CexType {
     Bybit,
     Kucoin,
+}
+
+pub async fn response_to_json(
+    response: Result<Response, crate::error::Error>,
+) -> Result<serde_json::Value, Error> {
+    response
+        .map_err(|e| Error::ReqwestError(e.to_string()))?
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| Error::ReqwestError(e.to_string()))
 }
 
 impl RequestType {
@@ -57,7 +65,7 @@ impl RequestType {
             RequestType::UserHoldings(s) => {
                 match cex {
                     CexType::Bybit => str.push_str(&format!("/v5/account/wallet-balance?{}", s)),
-                    CexType::Kucoin => str.push_str(&format!("/api/v1/accounts?{}", s)),
+                    CexType::Kucoin => str.push_str(&format!("/api/v1/accounts/ledgers?{}", s)),
                 }
                 str.to_string()
             }
@@ -74,11 +82,7 @@ impl RequestType {
                     CexType::Bybit => str.push_str(&format!("/v5/order/history?{}", s)),
                     CexType::Kucoin => str.push_str(&format!("/api/v1/market/stats?{}", s)),
                 }
-
-                println!("{:?}", str);
-
                 str.to_string()
-                //starttime-endtime modified
             }
         }
     }

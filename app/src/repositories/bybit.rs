@@ -9,7 +9,7 @@ use kucoin_rs::{
 use ring::hmac::{sign, Key, HMAC_SHA256};
 use serde::de::DeserializeOwned;
 
-use crate::error::Error;
+use crate::{error::Error, repositories::response_to_json};
 
 use super::{Provider, RequestType};
 
@@ -26,10 +26,10 @@ impl Provider for ByBitImplementation {
         Self { client }
     }
 
-    async fn get_user_info<T: DeserializeOwned + Debug>(
+    async fn get_user_info<T: DeserializeOwned + Debug, U: From<T>>(
         &self,
         request_type: RequestType,
-    ) -> Result<Vec<T>, crate::error::Error> {
+    ) -> Result<Vec<U>, crate::error::Error> {
         let bybit_key = dotenv::var("BYBIT_KEY").unwrap();
         let bybit_secret = dotenv::var("BYBIT_SECRET").unwrap();
         let response = request_type.format_url(crate::repositories::CexType::Bybit);
@@ -82,29 +82,20 @@ impl Provider for ByBitImplementation {
         .await
         .map_err(|e| Error::DeserializeError(e.to_string()))?;
 
-        println!("{:?}", response);
-        let mut vec: Vec<T> = Vec::new();
+        let mut vec = Vec::new();
 
         if let Some(value) = response["result"]["list"].as_array() {
             for ele in value {
                 let order: T = kucoin_rs::serde_json::from_value(ele.clone())
                     .map_err(|e| Error::DeserializeError(e.to_string()))?;
+
                 println!("{:?}", order);
 
-                vec.push(order);
+                vec.push(order.into());
             }
         } else {
         }
 
         Ok(vec)
     }
-}
-pub async fn response_to_json(
-    response: Result<Response, crate::error::Error>,
-) -> Result<Value, Error> {
-    response
-        .map_err(|e| Error::ReqwestError(e.to_string()))?
-        .json::<serde_json::Value>()
-        .await
-        .map_err(|e| Error::ReqwestError(e.to_string()))
 }
