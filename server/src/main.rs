@@ -1,13 +1,10 @@
-use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
-use std::hash::Hash;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use crate::cex_get::{bybit_thread_get_data, kucoin_thread_get_data};
 use app::models::order::{BybitOrder, KucoinOrder, Order};
-use app::models::wallet::{ByBitAccount, ByBitWallet, KucoinAccount, Wallet};
-
-use app::error::Error;
+use app::models::wallet::{ByBitWallet, KucoinAccount, Wallet};
 use app::repositories::bybit::ByBitImplementation;
 use app::repositories::kucoin::KucoinImplementation;
 use app::repositories::mem::StorageRepo;
@@ -17,27 +14,30 @@ use axum::Extension;
 use axum::{routing::get, Router};
 use axum_server::bind;
 use axum_server::Handle;
-use config::Config;
 use kucoin_rs::reqwest::Client;
-
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
-use tokio::main;
 
+mod cex_get;
 mod config;
-// mod tests;
 
 extern crate dotenv;
 
 use dotenv::dotenv;
-use std::env;
 
 //Entry point for the application
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    for (key, value) in env::vars() {
-        println!("{}: {}", key, value);
+
+    tokio::select! {
+    _ = kucoin_thread_get_data::<KucoinOrder, Order>("userOrderStats".to_string(), "category=spot".to_string()) => println!("Kucoin thread crash Order"),
+    _ = kucoin_thread_get_data::<KucoinAccount, Wallet>("userHoldings".to_string(), "accountType=spot".to_string()) =>
+        println!("Kucoin thread crash wallet"),
+    _ = bybit_thread_get_data::<BybitOrder, Order>("userOrderStats".to_string(), "category=spot".to_string()) =>
+        println!("Bybit thread crash Order"),
+    _ = bybit_thread_get_data::<ByBitWallet, Wallet>("userHoldings".to_string(), "accountType=spot".to_string()) =>
+        println!("Bybit thread crash wallet"),
+    _ =  run_local_server() => println!("Router crashed"),
     }
 
     run_local_server().await;

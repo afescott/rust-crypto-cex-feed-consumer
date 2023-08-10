@@ -2,10 +2,7 @@ use std::{fmt::Debug, time::SystemTime};
 
 use axum::http::{header::CONTENT_TYPE, HeaderMap, HeaderValue};
 use hex::encode;
-use kucoin_rs::{
-    reqwest::{self, Client, Response},
-    serde_json::{self, Value},
-};
+use kucoin_rs::reqwest::{self, Client};
 use ring::hmac::{sign, Key, HMAC_SHA256};
 use serde::de::DeserializeOwned;
 
@@ -34,7 +31,7 @@ impl Provider for ByBitImplementation {
         let bybit_secret = dotenv::var("BYBIT_SECRET").unwrap();
         let response = request_type.format_url(crate::repositories::CexType::Bybit);
         println!("{:?}", response);
-        let params = request_type.get_parameters();
+        let params = request_type.clone().get_parameters();
 
         let d = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -84,16 +81,30 @@ impl Provider for ByBitImplementation {
 
         let mut vec = Vec::new();
 
-        if let Some(value) = response["result"]["list"].as_array() {
+        if let RequestType::UserHoldings(_) = request_type {
+            let mut value = response["result"]["list"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|e| e["coin"].as_array().unwrap())
+                .flatten()
+                .collect::<Vec<_>>();
+
             for ele in value {
                 let order: T = kucoin_rs::serde_json::from_value(ele.clone())
                     .map_err(|e| Error::DeserializeError(e.to_string()))?;
 
-                println!("{:?}", order);
-
                 vec.push(order.into());
             }
         } else {
+            if let Some(value) = response["result"]["list"].as_array() {
+                for ele in value {
+                    let order: T = kucoin_rs::serde_json::from_value(ele.clone())
+                        .map_err(|e| Error::DeserializeError(e.to_string()))?;
+
+                    vec.push(order.into());
+                }
+            }
         }
 
         Ok(vec)

@@ -1,6 +1,6 @@
 use super::StorageRepository;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fmt::Debug,
     hash::Hash,
     sync::{Arc, Mutex},
@@ -26,7 +26,7 @@ where
     // In memory state for each respective model type
     //
     // Key mapping to unique model types of a collection
-    pub state: Arc<Mutex<HashMap<Key, Vec<T>>>>,
+    pub state: Arc<Mutex<HashMap<Key, T>>>,
 }
 
 impl<T> StorageRepo<T>
@@ -46,17 +46,14 @@ where
     T: Clone,
 {
     fn store_data(&self, results: Vec<T>) {
-        let mut result = self.state.lock().unwrap();
+        let mut hashmap = self.state.lock().unwrap();
 
         for ele in results {
             let keys: (String, String) = ele.clone().into();
 
             let key = Key::create(keys.0.to_string(), keys.1.to_string());
-            println!("{:?}", key);
-            if !result.contains_key(&key) {
-                let potential_key = result.get_mut(&key);
-
-                potential_key.unwrap().push(ele);
+            if !hashmap.contains_key(&key) {
+                hashmap.insert(key, ele);
             }
         }
     }

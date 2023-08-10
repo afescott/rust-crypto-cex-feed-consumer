@@ -26,14 +26,6 @@ use crate::{error::Error, repositories::response_to_json};
 
 use super::{Provider, RequestType};
 
-type HmacSha256 = Hmac<Sha256>;
-pub enum KucoinReturnType {
-    Account(Accounts),
-    Currency(Currency),
-    TradeHistory(TradeHistories),
-    DailyStats(DailyStats),
-}
-
 #[derive(Clone)]
 pub struct KucoinImplementation {
     pub client: Client,
@@ -56,12 +48,7 @@ impl Provider for KucoinImplementation {
         request: RequestType,
     ) -> Result<Vec<U>, crate::error::Error> {
         let endpoint = request.format_url(crate::repositories::CexType::Kucoin);
-        println!("{:?}", endpoint);
         let nonce = get_time().to_string();
-        let d = std::time::SystemTime::now()
-            .duration_since(std::time::SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
 
         let api_key = dotenv::var("KUCOIN_KEY").unwrap();
 
@@ -69,22 +56,11 @@ impl Provider for KucoinImplementation {
         let passphrase = dotenv::var("KUCOIN_PASSPHRASE").unwrap();
         let str_to_sign = format!("{}{}{}", nonce, "GET", endpoint);
 
-        println!("{:?}", str_to_sign);
         let key_sign = Key::new(HMAC_SHA256, &secret_key.as_bytes());
 
         let tag_secret = sign(&key_sign, str_to_sign.as_bytes());
 
         let sign_digest = encode(tag_secret.as_ref());
-
-        println!("{:?}", sign_digest);
-
-        // let passphrase_sign = Key::new(HMAC_SHA256, &secret_key.as_bytes());
-        //
-        // let tag_secret = sign(&passphrase_sign, passphrase.as_bytes());
-        //
-        // let passphrase_digest = encode(tag_secret.as_ref());
-
-        // println!("{:?}", passphrase_digest);
 
         let mut headers = HeaderMap::new();
 
@@ -123,14 +99,12 @@ impl Provider for KucoinImplementation {
         )
         .await
         .map_err(|e| Error::DeserializeError(e.to_string()))?;
-
         let mut vec = Vec::new();
         if let Some(value) = response["data"].as_array() {
-            println!("{:?}", value);
             for ele in value {
-                println!("{:?}", ele);
                 let order: T = kucoin_rs::serde_json::from_value(ele.clone())
                     .map_err(|e| Error::DeserializeError(e.to_string()))?;
+                println!("Thread");
 
                 println!("{:?}", order);
 
