@@ -9,29 +9,30 @@ use std::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Key {
     id_one: String,
-    id_two: String,
 }
 
 impl Key {
-    pub fn create(id_one: String, id_two: String) -> Self {
-        Self { id_one, id_two }
+    pub fn create(id_one: String) -> Self {
+        Self { id_one }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct StorageRepo<T>
 where
-    (String, String): From<T>,
+    T: Debug + PartialEq,
+    String: From<T>,
 {
     // In memory state for each respective model type
     //
     // Key mapping to unique model types of a collection
-    pub state: Arc<Mutex<HashMap<Key, T>>>,
+    pub state: Arc<Mutex<HashMap<String, Vec<T>>>>,
 }
 
 impl<T> StorageRepo<T>
 where
-    (String, String): From<T>,
+    String: From<T>,
+    T: Debug + PartialEq,
 {
     pub fn new() -> Self {
         Self {
@@ -42,18 +43,26 @@ where
 
 impl<T> StorageRepository<T> for crate::repositories::mem::StorageRepo<T>
 where
-    (String, String): From<T>,
-    T: Clone,
+    String: From<T>,
+    T: Clone + Debug + PartialEq,
 {
     fn store_data(&self, results: Vec<T>) {
         let mut hashmap = self.state.lock().unwrap();
 
         for ele in results {
-            let keys: (String, String) = ele.clone().into();
+            let key: String = ele.clone().into();
 
-            let key = Key::create(keys.0.to_string(), keys.1.to_string());
+            println!("{:?}", key);
             if !hashmap.contains_key(&key) {
-                hashmap.insert(key, ele);
+                hashmap.insert(key, Vec::new());
+
+                return;
+            } else {
+                let result = hashmap.get_mut(&key).unwrap();
+
+                if !result.contains(&ele) {
+                    result.push(ele);
+                }
             }
         }
     }

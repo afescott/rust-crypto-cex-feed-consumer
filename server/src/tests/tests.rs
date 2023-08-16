@@ -5,6 +5,8 @@ use kucoin_rs::reqwest::Client;
 use crate::run_local_server;
 
 #[tokio::test]
+pub async fn asfa() {}
+
 // pub async fn kucoin_test() {
 //     run_local_server().await;
 //

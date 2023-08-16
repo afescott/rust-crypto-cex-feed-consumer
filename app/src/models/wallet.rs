@@ -1,9 +1,8 @@
 #![allow(dead_code)]
 
 use serde::Deserialize;
-use serde_json::Value;
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct Wallet {
     exhange: String,
     coin: String,
@@ -12,9 +11,9 @@ pub struct Wallet {
     realised_pnl: Option<String>,
 }
 
-impl From<Wallet> for (String, String) {
+impl From<Wallet> for String {
     fn from(value: Wallet) -> Self {
-        (value.coin.to_string(), value.exhange.to_string())
+        value.coin.to_string()
     }
 }
 

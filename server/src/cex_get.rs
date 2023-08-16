@@ -8,11 +8,14 @@ use reqwest::Client;
 use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 
-pub async fn kucoin_thread_get_data<T, U>(get_type: String, params: String)
-where
-    U: From<T> + Clone + Debug + Send,
+pub async fn kucoin_thread_get_data<T, U>(
+    get_type: String,
+    params: String,
+    storage: Arc<StorageRepo<U>>,
+) where
+    U: From<T> + Clone + Debug + Send + PartialEq,
     T: DeserializeOwned + Debug,
-    (std::string::String, std::string::String): From<U>, // U: From<(String, String)>,
+    String: From<U>, // U: From<(String, String)>,
 {
     let result = tokio::spawn(async move {
         let bybit_implementation = KucoinImplementation {
@@ -39,11 +42,14 @@ where
     result.await.unwrap();
 }
 
-pub async fn bybit_thread_get_data<T, U>(get_type: String, params: String)
-where
-    U: From<T> + Clone + Debug + Send,
+pub async fn bybit_thread_get_data<T, U>(
+    get_type: String,
+    params: String,
+    bybit_storage: Arc<StorageRepo<U>>,
+) where
+    U: From<T> + Clone + Debug + Send + PartialEq,
     T: DeserializeOwned + Debug,
-    (std::string::String, std::string::String): From<U>, // U: From<(String, String)>,
+    String: From<U>, // U: From<(String, String)>,
 {
     let result = tokio::spawn(async move {
         let bybit_implementation = ByBitImplementation {
