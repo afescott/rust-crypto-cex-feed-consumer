@@ -32,8 +32,9 @@ async fn run_local_server() {
     let handle = Handle::new();
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3002));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
+    println!("listening on 0.0.0.0:3000");
     //every time we receive a request. after request we need to store in state
     let storage_orders = Arc::new(StorageRepo::<Order>::new());
 
@@ -60,19 +61,14 @@ async fn run_local_server() {
             "accountType=spot".to_string(),
             Arc::clone(&storage_wallet)
         ),
-    );
-
-    let _result = bind(addr)
-        .handle(handle)
-        .serve(
+        bind(addr).handle(handle).serve(
             Router::new()
                 .merge(route_api())
                 .layer(Extension(Arc::clone(&storage_orders)))
                 .layer(Extension(Arc::clone(&storage_wallet)))
                 .into_make_service(),
         )
-        .await
-        .unwrap();
+    );
 }
 
 fn route_api() -> Router {
@@ -84,18 +80,20 @@ fn route_api() -> Router {
 async fn get_command<T>(
     Path(get_command): Path<String>,
     Extension(storage): Extension<Arc<StorageRepo<T>>>,
-) where
+) -> String
+where
     T: Clone + Debug + PartialEq,
-    String: From<T>, // U: From<(String, String)>,
+    String: From<T>,
 {
+    println!("Hit");
     let state = storage.state.lock().unwrap();
 
-    let response = match get_command.as_str() {
-        "list" => state.values(),
-        _ => todo!(),
-    };
-
-    for ele in state.values() {
-        println!("{:?}", ele);
+    match get_command.as_str() {
+        "list" => {
+            format!("{:?}", state.values())
+        }
+        _ => {
+            format!("{:?}", state.get(&get_command).unwrap())
+        }
     }
 }

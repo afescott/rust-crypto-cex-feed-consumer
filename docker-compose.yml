@@ -1,0 +1,5 @@
+services:
+  crypto_api:
+    image: server
+    ports:
+      - 30:00

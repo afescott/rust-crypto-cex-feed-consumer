@@ -13,7 +13,7 @@ pub async fn kucoin_thread_get_data<T, U>(
     params: String,
     storage: Arc<StorageRepo<U>>,
 ) where
-    U: From<T> + Clone + Debug + Send + PartialEq,
+    U: From<T> + Clone + Debug + Send + PartialEq + 'static,
     T: DeserializeOwned + Debug,
     String: From<U>, // U: From<(String, String)>,
 {
@@ -23,17 +23,16 @@ pub async fn kucoin_thread_get_data<T, U>(
         };
 
         //every time we receive a request. after request we need to store in state
-        let storage_orders = Arc::new(StorageRepo::<U>::new());
-
         let result = RequestType::from(get_type, params);
-        println!("Thread");
+
         loop {
             let result = bybit_implementation
                 .get_user_info::<T, U>(result.clone().unwrap())
                 .await
                 .unwrap();
+            println!("{:?}", result);
 
-            storage_orders.store_data(result);
+            storage.store_data(result);
 
             thread::sleep(Duration::from_secs(3));
         }
@@ -47,7 +46,7 @@ pub async fn bybit_thread_get_data<T, U>(
     params: String,
     bybit_storage: Arc<StorageRepo<U>>,
 ) where
-    U: From<T> + Clone + Debug + Send + PartialEq,
+    U: From<T> + Clone + Debug + Send + PartialEq + 'static,
     T: DeserializeOwned + Debug,
     String: From<U>, // U: From<(String, String)>,
 {
@@ -57,18 +56,14 @@ pub async fn bybit_thread_get_data<T, U>(
         };
 
         //every time we receive a request. after request we need to store in state
-        let storage_orders = Arc::new(StorageRepo::<U>::new());
-
         let result = RequestType::from(get_type, params);
-        println!("Thread");
         loop {
             let result = bybit_implementation
                 .get_user_info::<T, U>(result.clone().unwrap())
                 .await
                 .unwrap();
 
-            storage_orders.store_data(result);
-
+            bybit_storage.store_data(result);
             thread::sleep(Duration::from_secs(3));
         }
     });

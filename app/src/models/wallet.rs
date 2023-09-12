@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-#[derive(serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct Wallet {
     exhange: String,
     coin: String,
