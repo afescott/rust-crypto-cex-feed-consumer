@@ -30,7 +30,6 @@ impl Provider for ByBitImplementation {
         let bybit_key = dotenv::var("BYBIT_KEY").unwrap();
         let bybit_secret = dotenv::var("BYBIT_SECRET").unwrap();
         let response = request_type.format_url(crate::repositories::CexType::Bybit);
-        println!("{:?}", response);
         let params = request_type.clone().get_parameters();
 
         let d = SystemTime::now()

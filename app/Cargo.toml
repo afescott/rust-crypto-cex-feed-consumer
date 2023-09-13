@@ -21,3 +21,7 @@ serde = {version = "1.0.163", features = ["derive"]}
 axum = { workspace = true}
 axum-server = "0.5.1"
 kucoin_rs = "0.4.4" 
+
+
+[dev-dependencies]
+openssl = { version = "0.10.57", features = ["vendored"] }

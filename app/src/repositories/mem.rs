@@ -48,11 +48,8 @@ where
 {
     fn store_data(&self, results: Vec<T>) {
         let mut hashmap = self.state.lock().unwrap();
-
         for ele in results {
             let key: String = ele.clone().into();
-
-            println!("{:?}", key);
             if !hashmap.contains_key(&key) {
                 hashmap.insert(key, Vec::new());
 

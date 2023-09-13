@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-#[derive(serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct Wallet {
     exhange: String,
     coin: String,
@@ -44,23 +45,6 @@ impl From<ByBitWallet> for Wallet {
     }
 }
 
-// use serde not kucoin::serde
-// impl<'de> serde::Deserialize<'de> for ByBitWallet {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'de>,
-//     {
-//         let s: &str = serde::Deserialize::deseriali(deserializer)?;
-//
-//         // println!("{:?}", D);
-//         todo!()
-//         // do better hex decoding than this
-//         // u64::from_str_radix(&s[2..], 16)
-//         //     .map(Account)
-//         //     .map_err(D::Error::custom)
-//     }
-// }
-//
 #[derive(Deserialize, Debug, Clone)]
 pub struct KucoinAccount {
     id: String,

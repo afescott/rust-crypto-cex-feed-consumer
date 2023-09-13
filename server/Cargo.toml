@@ -20,4 +20,8 @@ axum-server = "0.5.1"
 kucoin_rs = "0.4.4"
 rust-bybit = { git = "https://github.com/yufuquant/rust-bybit.git" }
 
+
+[dev-dependencies]
+openssl = { version = "0.10.57", features = ["vendored"] }
+
 [features]

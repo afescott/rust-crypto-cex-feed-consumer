@@ -1,0 +1,12 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: crypto-abstract-api
+deploy:
+  helm:
+    releases:
+      - name: .
+        chartPath: .
+        valuesFiles:
+          - docker-compose.yml
+          - values.yaml

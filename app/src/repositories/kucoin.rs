@@ -1,22 +1,10 @@
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
-use base64::alphabet::STANDARD;
 use hex::encode;
-use hmac::{Hmac, Mac};
 use ring::hmac::{sign, Key, HMAC_SHA256};
-use serde_json::{json, map::Values, Value};
-use sha2::Sha256;
-use std::{collections::HashMap, fmt::Debug, str::FromStr, thread, time::Duration};
+use std::fmt::Debug;
 
 use kucoin_rs::{
-    kucoin::{
-        client::{Credentials, Kucoin, KucoinEnv},
-        model::{
-            market::{Currency, DailyStats, TradeHistories},
-            user::Accounts,
-        },
-        trade::OrderInfoOptionals,
-        utils::get_time,
-    },
+    kucoin::utils::get_time,
     reqwest::{self, Client},
 };
 
@@ -104,9 +92,6 @@ impl Provider for KucoinImplementation {
             for ele in value {
                 let order: T = kucoin_rs::serde_json::from_value(ele.clone())
                     .map_err(|e| Error::DeserializeError(e.to_string()))?;
-                println!("Thread");
-
-                println!("{:?}", order);
 
                 vec.push(order.into());
             }
