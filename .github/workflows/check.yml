@@ -57,10 +57,6 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
       - name: cargo doc
         run: cargo doc --no-deps --all-features
-        env:
-          RUSTDOCFLAGS: --cfg docsrs
-  hack:
-    runs-on: ubuntu-latest
     name: ubuntu / stable / features
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +75,7 @@ jobs:
     # https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
     strategy:
       matrix:
-        msrv: ["1.63"] # 2021 edition requires 1.56
+        msrv: ["1.64"] 
     name: ubuntu / ${{ matrix.msrv }}
     steps:
       - uses: actions/checkout@v4

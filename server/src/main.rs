@@ -40,7 +40,7 @@ async fn run_local_server() {
 
     let storage_wallet = Arc::new(StorageRepo::<Wallet>::new());
 
-    join!(
+    let _result = join!(
         kucoin_thread_get_data::<KucoinOrder, Order>(
             "userOrderStats".to_string(),
             "category=spot".to_string(),

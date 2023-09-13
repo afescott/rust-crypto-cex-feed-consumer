@@ -9,3 +9,4 @@ members = [
 tokio = { version = "1", features = ["full"] }
 axum = "0.6.18"
 dotenv = "0.15.0"
+openssl = "0.10.57"
