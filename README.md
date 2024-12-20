@@ -1,6 +1,4 @@
-WIP:
-
-Rust user api to get user order and wallet information via a generic axum web server. In-memory state mechanism to dynamically store unique data. Compared with similar data types from other exchanges to match into common structs. Result is an aggregator displaying a variety of user data.
+Bybit and Kucoin Aggregator to retrieve wallet and spot order information. Comparisons are made to find matching tokens between exchanges (token pairs). Axum routing is used to provide api endpoints for a client to retrieve wallet/token related info. Rust memory state mechanism to dynamically store user info
 
 Running:
 
